@@ -1,8 +1,10 @@
-const CACHE = 'rupee-counter-v1';
+const CACHE = 'rupee-counter-v2';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
   'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@300;400;500&display=swap'
 ];
 
