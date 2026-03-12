@@ -187,13 +187,10 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--card-radius);
-      padding: 12px 14px;
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      grid-template-rows: auto auto;
+      padding: 10px 12px;
+      display: flex;
       align-items: center;
-      column-gap: 12px;
-      row-gap: 8px;
+      gap: 10px;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
 
@@ -203,20 +200,18 @@
     }
 
     .denom-badge {
-      width: 64px;
-      height: 40px;
+      width: 62px;
+      min-width: 62px;
+      height: 42px;
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-family: 'Playfair Display', serif;
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       position: relative;
       overflow: hidden;
-      flex-shrink: 0;
-      grid-row: 1;
-      grid-column: 1;
     }
 
     .denom-badge::after {
@@ -237,20 +232,9 @@
     .d2   { background: linear-gradient(135deg, #3a5c1a, #5a8a2e); color: #d8ffc0; }
     .d1   { background: linear-gradient(135deg, #5c5c1a, #8a8a2e); color: #ffffc0; }
 
-    /* Row 1: badge | controls | subtotal */
-    .denom-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      grid-row: 1;
-      grid-column: 2;
-      min-width: 0;
-    }
-
     .denom-subtotal {
-      grid-row: 1;
-      grid-column: 3;
-      font-size: 13px;
+      flex: 1;
+      font-size: 14px;
       font-weight: 500;
       color: var(--gold);
       white-space: nowrap;
@@ -259,41 +243,15 @@
 
     .denom-subtotal.zero { color: var(--text-dim); }
 
-    .qty-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--surface2);
-      color: var(--gold);
-      font-size: 22px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.15s ease;
-      flex-shrink: 0;
-      line-height: 1;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-    }
-
-    .qty-btn:active {
-      background: rgba(245,200,66,0.2);
-      border-color: var(--gold);
-      transform: scale(0.92);
-    }
-
     .qty-input {
-      flex: 1;
-      min-width: 0;
+      width: 72px;
+      min-width: 72px;
       background: var(--surface2);
       border: 1px solid var(--border);
       border-radius: 8px;
       color: var(--text);
       font-family: 'DM Mono', monospace;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 500;
       text-align: center;
       padding: 6px 4px;
@@ -301,6 +259,7 @@
       outline: none;
       transition: border-color 0.2s;
       -moz-appearance: textfield;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .qty-input::-webkit-outer-spin-button,
@@ -577,23 +536,13 @@
       card.className = 'denom-card';
       card.innerHTML = `
         <div class="denom-badge ${DENOM_CLASS[d]}">₹${d}</div>
-        <div class="denom-controls">
-          <button class="qty-btn" onclick="adjust(${d},-1)">−</button>
-          <input type="number" class="qty-input" id="qty-${d}" value="0" min="0"
-            oninput="setQty(${d}, this.value)" placeholder="0" />
-          <button class="qty-btn" onclick="adjust(${d},1)">+</button>
-        </div>
+        <input type="number" class="qty-input" id="qty-${d}" value="0" min="0"
+          inputmode="numeric" pattern="[0-9]*"
+          oninput="setQty(${d}, this.value)" placeholder="0" />
         <div class="denom-subtotal zero" id="sub-${d}">₹0</div>
       `;
       grid.appendChild(card);
     });
-  }
-
-  function adjust(denom, delta) {
-    const newVal = Math.max(0, quantities[denom] + delta);
-    quantities[denom] = newVal;
-    document.getElementById(`qty-${denom}`).value = newVal;
-    updateUI(denom);
   }
 
   function setQty(denom, val) {
