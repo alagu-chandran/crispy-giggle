@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a0a2e" />
+  <meta name="description" content="Rupee Denomination Counter & Number to Words Converter" />
+  <link rel="manifest" href="manifest.json" />
+  <title>₹ Rupee Counter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --surface: #131325;
+      --surface2: #1a1a35;
+      --border: rgba(255,210,90,0.15);
+      --gold: #f5c842;
+      --gold2: #e8a020;
+      --gold-glow: rgba(245,200,66,0.25);
+      --text: #f0e8d5;
+      --text-dim: rgba(240,232,213,0.5);
+      --green: #4ecca3;
+      --red: #ff6b6b;
+      --accent: #c084fc;
+      --card-radius: 16px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 10%, rgba(245,200,66,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(192,132,252,0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 60% 40%, rgba(78,204,163,0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; padding: 0 0 80px; }
+
+    /* Header */
+    header {
+      padding: 28px 20px 0;
+      text-align: center;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .logo-symbol {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: #1a0a00;
+      box-shadow: 0 4px 20px var(--gold-glow);
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 26px;
+      font-weight: 900;
+      background: linear-gradient(90deg, var(--gold), #fff8e7, var(--gold2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      margin: 24px 16px 0;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      border-radius: 9px;
+      transition: all 0.25s ease;
+      text-transform: uppercase;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      color: #1a0800;
+      font-weight: 500;
+      box-shadow: 0 2px 12px var(--gold-glow);
+    }
+
+    /* Panels */
+    .panel { display: none; padding: 0 16px; }
+    .panel.active { display: block; }
+
+    /* Grand Total */
+    .grand-total {
+      margin: 20px 0 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .grand-total::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    .grand-total-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+
+    .grand-total-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 40px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--gold), #fff7d6, var(--gold2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      transition: all 0.3s ease;
+      line-height: 1;
+    }
+
+    .grand-total-words {
+      font-size: 11px;
+      color: var(--green);
+      margin-top: 6px;
+      min-height: 16px;
+      transition: all 0.3s ease;
+    }
+
+    /* Denomination cards */
+    .denom-grid { display: flex; flex-direction: column; gap: 8px; }
+
+    .denom-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .denom-card:focus-within {
+      border-color: rgba(245,200,66,0.4);
+      box-shadow: 0 0 0 3px rgba(245,200,66,0.08);
+    }
+
+    .denom-badge {
+      min-width: 68px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 700;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .denom-badge::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+      pointer-events: none;
+    }
+
+    .d500 { background: linear-gradient(135deg, #3b2a8a, #5b42b0); color: #e8d8ff; }
+    .d200 { background: linear-gradient(135deg, #1a5c3a, #2e8a5a); color: #c8ffe0; }
+    .d100 { background: linear-gradient(135deg, #6b3a1a, #a05c2e); color: #ffe0c0; }
+    .d50  { background: linear-gradient(135deg, #1a4a6b, #2e72a0); color: #c0e8ff; }
+    .d20  { background: linear-gradient(135deg, #5c3a1a, #8a5c2e); color: #ffd8a0; }
+    .d10  { background: linear-gradient(135deg, #1a5c5c, #2e8a8a); color: #c0fff0; }
+    .d5   { background: linear-gradient(135deg, #5c1a4a, #8a2e72); color: #ffc0e8; }
+    .d2   { background: linear-gradient(135deg, #3a5c1a, #5a8a2e); color: #d8ffc0; }
+    .d1   { background: linear-gradient(135deg, #5c5c1a, #8a8a2e); color: #ffffc0; }
+
+    .denom-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .qty-btn {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--gold);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .qty-btn:hover { background: rgba(245,200,66,0.15); border-color: var(--gold); }
+    .qty-btn:active { transform: scale(0.9); }
+
+    .qty-input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 16px;
+      text-align: center;
+      padding: 4px 6px;
+      height: 30px;
+      outline: none;
+      transition: border-color 0.2s;
+      -moz-appearance: textfield;
+    }
+
+    .qty-input::-webkit-outer-spin-button,
+    .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .qty-input:focus { border-color: rgba(245,200,66,0.5); }
+
+    .denom-subtotal {
+      min-width: 70px;
+      text-align: right;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+
+    .denom-subtotal.zero { color: var(--text-dim); }
+
+    /* Reset button */
+    .reset-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,107,107,0.3);
+      background: rgba(255,107,107,0.08);
+      color: var(--red);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .reset-btn:hover { background: rgba(255,107,107,0.15); border-color: rgba(255,107,107,0.5); }
+
+    /* Tab 2 — Words converter */
+    .converter-card {
+      margin-top: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .converter-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+
+    .input-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .big-input-wrap {
+      position: relative;
+    }
+
+    .rupee-prefix {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      color: var(--gold);
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .big-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      font-weight: 700;
+      padding: 14px 16px 14px 44px;
+      outline: none;
+      -moz-appearance: textfield;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .big-input::-webkit-outer-spin-button,
+    .big-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    .big-input:focus {
+      border-color: rgba(192,132,252,0.5);
+      box-shadow: 0 0 0 3px rgba(192,132,252,0.1);
+    }
+
+    .words-result {
+      margin-top: 20px;
+      padding: 18px;
+      background: var(--surface2);
+      border-radius: 12px;
+      border: 1px solid rgba(192,132,252,0.15);
+      min-height: 72px;
+      transition: all 0.3s ease;
+    }
+
+    .words-result-label {
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .words-result-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      line-height: 1.5;
+      color: var(--accent);
+      transition: all 0.3s ease;
+    }
+
+    .words-result-text.empty {
+      font-size: 13px;
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* Denomination breakdown */
+    .breakdown-section {
+      margin-top: 16px;
+    }
+
+    .breakdown-title {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .breakdown-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .breakdown-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .breakdown-item .note {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .breakdown-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--gold);
+      opacity: 0.7;
+    }
+
+    .breakdown-item .count { color: var(--text-dim); }
+    .breakdown-item .val { color: var(--gold); }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(13,13,26,0.95);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      padding: 8px 0 env(safe-area-inset-bottom);
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      z-index: 100;
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel.active .denom-card {
+      animation: fadeUp 0.3s ease both;
+    }
+
+    .panel.active .denom-card:nth-child(1) { animation-delay: 0.02s; }
+    .panel.active .denom-card:nth-child(2) { animation-delay: 0.04s; }
+    .panel.active .denom-card:nth-child(3) { animation-delay: 0.06s; }
+    .panel.active .denom-card:nth-child(4) { animation-delay: 0.08s; }
+    .panel.active .denom-card:nth-child(5) { animation-delay: 0.10s; }
+    .panel.active .denom-card:nth-child(6) { animation-delay: 0.12s; }
+    .panel.active .denom-card:nth-child(7) { animation-delay: 0.14s; }
+    .panel.active .denom-card:nth-child(8) { animation-delay: 0.16s; }
+    .panel.active .denom-card:nth-child(9) { animation-delay: 0.18s; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .updating { animation: pulse 0.3s ease; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-symbol">₹</div>
+      <h1>Rupee Counter</h1>
+    </div>
+    <p>Denomination Calculator &amp; Converter</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('counter')">🪙 Counter</button>
+    <button class="tab" onclick="switchTab('words')">🔤 Words</button>
+  </div>
+
+  <!-- TAB 1: Counter -->
+  <div id="panel-counter" class="panel active">
+    <div class="grand-total">
+      <div class="grand-total-label">Total Amount</div>
+      <div class="grand-total-value" id="grand-total">₹0</div>
+      <div class="grand-total-words" id="grand-total-words">Enter quantities below</div>
+    </div>
+
+    <div class="denom-grid" id="denom-grid"></div>
+
+    <button class="reset-btn" onclick="resetAll()">✕ Reset All</button>
+  </div>
+
+  <!-- TAB 2: Words Converter -->
+  <div id="panel-words" class="panel">
+    <div class="converter-card">
+      <div class="input-label">Enter Amount</div>
+      <div class="big-input-wrap">
+        <span class="rupee-prefix">₹</span>
+        <input type="number" class="big-input" id="words-input" placeholder="0" min="0" oninput="convertToWords()" />
+      </div>
+
+      <div class="words-result">
+        <div class="words-result-label">In Words</div>
+        <div class="words-result-text empty" id="words-output">Type a number to see result...</div>
+      </div>
+    </div>
+
+    <div class="breakdown-section" id="breakdown-section" style="display:none">
+      <div class="breakdown-title">Optimal Denomination Breakdown</div>
+      <div class="breakdown-list" id="breakdown-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DENOMS = [500, 200, 100, 50, 20, 10, 5, 2, 1];
+  const DENOM_CLASS = { 500:'d500', 200:'d200', 100:'d100', 50:'d50', 20:'d20', 10:'d10', 5:'d5', 2:'d2', 1:'d1' };
+  const quantities = {};
+
+  DENOMS.forEach(d => quantities[d] = 0);
+
+  function buildGrid() {
+    const grid = document.getElementById('denom-grid');
+    grid.innerHTML = '';
+    DENOMS.forEach(d => {
+      const card = document.createElement('div');
+      card.className = 'denom-card';
+      card.innerHTML = `
+        <div class="denom-badge ${DENOM_CLASS[d]}">₹${d}</div>
+        <div class="denom-controls">
+          <button class="qty-btn" onclick="adjust(${d},-1)">−</button>
+          <input type="number" class="qty-input" id="qty-${d}" value="0" min="0"
+            oninput="setQty(${d}, this.value)" placeholder="0" />
+          <button class="qty-btn" onclick="adjust(${d},1)">+</button>
+        </div>
+        <div class="denom-subtotal zero" id="sub-${d}">₹0</div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  function adjust(denom, delta) {
+    const newVal = Math.max(0, quantities[denom] + delta);
+    quantities[denom] = newVal;
+    document.getElementById(`qty-${denom}`).value = newVal;
+    updateUI(denom);
+  }
+
+  function setQty(denom, val) {
+    const n = Math.max(0, parseInt(val) || 0);
+    quantities[denom] = n;
+    updateUI(denom);
+  }
+
+  function updateUI(denom) {
+    const sub = quantities[denom] * denom;
+    const el = document.getElementById(`sub-${denom}`);
+    el.textContent = `₹${sub.toLocaleString('en-IN')}`;
+    el.className = 'denom-subtotal' + (sub === 0 ? ' zero' : '');
+    updateTotal();
+  }
+
+  function updateTotal() {
+    const total = DENOMS.reduce((s, d) => s + quantities[d] * d, 0);
+    const gtEl = document.getElementById('grand-total');
+    gtEl.textContent = `₹${total.toLocaleString('en-IN')}`;
+    gtEl.classList.add('updating');
+    setTimeout(() => gtEl.classList.remove('updating'), 300);
+
+    const wordsEl = document.getElementById('grand-total-words');
+    if (total === 0) {
+      wordsEl.textContent = 'Enter quantities below';
+      wordsEl.style.color = 'var(--text-dim)';
+    } else {
+      wordsEl.textContent = numberToWords(total) + ' Rupees';
+      wordsEl.style.color = 'var(--green)';
+    }
+  }
+
+  function resetAll() {
+    DENOMS.forEach(d => {
+      quantities[d] = 0;
+      document.getElementById(`qty-${d}`).value = 0;
+      const el = document.getElementById(`sub-${d}`);
+      el.textContent = '₹0';
+      el.className = 'denom-subtotal zero';
+    });
+    updateTotal();
+  }
+
+  // ---- Number to Words (Indian system) ----
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+    'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  function twoDigits(n) {
+    if (n < 20) return ones[n];
+    return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+  }
+
+  function threeDigits(n) {
+    if (n >= 100) return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' ' + twoDigits(n % 100) : '');
+    return twoDigits(n);
+  }
+
+  function numberToWords(n) {
+    if (n === 0) return 'Zero';
+    if (n < 0) return 'Minus ' + numberToWords(-n);
+
+    // Indian system: Crore, Lakh, Thousand
+    let parts = [];
+
+    const crore = Math.floor(n / 10000000);
+    const lakh = Math.floor((n % 10000000) / 100000);
+    const thousand = Math.floor((n % 100000) / 1000);
+    const rest = n % 1000;
+
+    if (crore > 0) parts.push(threeDigits(crore) + ' Crore');
+    if (lakh > 0) parts.push(twoDigits(lakh) + ' Lakh');
+    if (thousand > 0) parts.push(twoDigits(thousand) + ' Thousand');
+    if (rest > 0) parts.push(threeDigits(rest));
+
+    return parts.join(' ');
+  }
+
+  function convertToWords() {
+    const val = parseInt(document.getElementById('words-input').value) || 0;
+    const outEl = document.getElementById('words-output');
+
+    if (val === 0 || isNaN(val)) {
+      outEl.textContent = 'Type a number to see result...';
+      outEl.className = 'words-result-text empty';
+      document.getElementById('breakdown-section').style.display = 'none';
+      return;
+    }
+
+    const words = numberToWords(val);
+    outEl.textContent = words + ' Rupees Only';
+    outEl.className = 'words-result-text';
+
+    // Show breakdown
+    showBreakdown(val);
+  }
+
+  function showBreakdown(amount) {
+    const section = document.getElementById('breakdown-section');
+    const list = document.getElementById('breakdown-list');
+    list.innerHTML = '';
+
+    let rem = amount;
+    const used = [];
+    DENOMS.forEach(d => {
+      const cnt = Math.floor(rem / d);
+      if (cnt > 0) { used.push({ d, cnt }); rem -= cnt * d; }
+    });
+
+    if (used.length === 0) { section.style.display = 'none'; return; }
+
+    used.forEach(({ d, cnt }) => {
+      const item = document.createElement('div');
+      item.className = 'breakdown-item';
+      item.innerHTML = `
+        <div class="note"><div class="breakdown-dot"></div>₹${d} × ${cnt}</div>
+        <span class="val">₹${(d * cnt).toLocaleString('en-IN')}</span>
+      `;
+      list.appendChild(item);
+    });
+
+    section.style.display = 'block';
+  }
+
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', (i === 0 && tab === 'counter') || (i === 1 && tab === 'words'));
+    });
+    document.getElementById('panel-counter').classList.toggle('active', tab === 'counter');
+    document.getElementById('panel-words').classList.toggle('active', tab === 'words');
+  }
+
+  // Init
+  buildGrid();
+
+  // Service Worker registration
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>
